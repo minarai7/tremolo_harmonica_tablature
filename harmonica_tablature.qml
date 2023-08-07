@@ -21,6 +21,7 @@ MuseScore {
     description: "Harmonica Tab plugin"
     menuPath: "Plugins.Harmonica Tablature"
     pluginType: "dialog"
+    title: "Harmonica Tab"
 
 // ------ OPTIONS -------
     property string sep : "\n"     // change to "," if you want tabs horizontally
@@ -80,6 +81,8 @@ MuseScore {
             model: ListModel {
                 id: harp
                 property var tuning
+				ListElement { text: "Tremolo 24Hole SMuFL"; tuning: 15 }
+				ListElement { text: "Tremolo 24Hole Classic"; tuning: 14 }
                 ListElement { text: "Blues Harp (Richter)"; tuning: 1 }
                 ListElement { text: "Richter valved"; tuning: 2 }
                 ListElement { text: "Paddy Richter (Brendan Power), valved"; tuning: 10 }
@@ -92,6 +95,7 @@ MuseScore {
                 ListElement { text: "Power Bender (Brendan Power), valved"; tuning: 11 }
                 ListElement { text: "Power Draw (Brendan Power), valved"; tuning: 12 }
                 ListElement { text: "Standard Chromatic"; tuning: 4 }
+                ListElement { text: "Chromatic 16Hole"; tuning: 13 }
             }
             width: 100
             onCurrentIndexChanged: {
@@ -123,13 +127,13 @@ MuseScore {
             text: "Ok"
             onClicked: {
                 apply()
-                Qt.quit()
+                quit()
             }
         }
         Button {
             id: closeButton
             text: "Close"
-            onClicked: { Qt.quit() }
+            onClicked: { quit() }
         }
 
     }
@@ -163,7 +167,7 @@ MuseScore {
         "+4", "+4s", "-5", "-5s", "+6", "-6", "-6s", "+7",  "+7s", "-7", "-7s", "-8",
         "+8", "+8s", "-9", "-9s", "+10", "-10", "-10s", "+11", "+11s", "-11", "-11s", "-12",
         "+12", "+12s", "-12", "-12s" ];
-
+        
         var zirkValved = ["+1", "-1b", "-1", "+2b", "+2", "-2", "+3b", "+3", "-3b", "-3", "+4", "-4b",
         "-4", "+5b", "+5", "-5b", "-5", "+6", "-6b", "-6", "+7b", "+7", "-7", "+8b",
         "+8", "-8b", "-8", "+9b", "+9", "-9", "10b", "+10", "-10b", "-10" ]; // Circular/Spiral tuned diatonic
@@ -205,8 +209,35 @@ MuseScore {
         "-10" ];
         powerDraw[-2] = "+1bb"; powerDraw[-1] = "+1b"; //Two notes below the key at blow 1
                 // Brendan Power's tuning, half valved
+                
+        var chromatic16H = ["+1.", "+1.s", "-1.", "-1.s", "+2.", "-2.", "-2.s", "+3.", "+3.s", "-3.", "-3.s","-4.",
+         "+1", "+1s", "-1", "-1s", "+2", "-2", "-2s", "+3", "+3s", "-3", "-3s","-4",
+        "+4", "+4s", "-5", "-5s", "+6", "-6", "-6s", "+7",  "+7s", "-7", "-7s", "-8",
+        "+8", "+8s", "-9", "-9s", "+10", "-10", "-10s", "+11", "+11s", "-11", "-11s", "-12",
+        "+12", "+12s", "-12", "-12s" ];   
 
-        var tuning = richter
+        var tremolo24H = ["1̣", "♯1̣", "2̣", "♯2̣", "3̣", "4̣", "♯4̣", "5̣", "♯5̣", "6̣", "♯6̣","7̣",
+        "1", "♯1", "2", "♯2", "3", "4", "♯4", "5", "♯5", "6", "♯6", "7",
+        "1̇", "♯1̇", "2̇", "♯2̇", "3̇", "4̇", "♯4̇", "5̇", "♯5̇", "6̇", "♯6̇", "7̇",
+        "1^", "X", "X", "X" ];
+		
+		//Combining Dot Below U+0323 is the dot below ̣
+		//Combining Dot Above U+0307 is the dot above ̇
+		//1^ stands for double dot above
+		
+		var tremolo24HSMuFL = ["", "", "", "", "", "", "", "", "", "", "","",
+        "", "", "", "", "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", "", "", "", "", "",
+        "", "X", "X", "X" ];
+		
+		//https://w3c.github.io/smufl/latest/tables/figured-bass.html
+		
+		//var tr24orig = ["+3", 'X', "-2", "X", "+5", "-4", "X", "+7", "X", "-6", "X","-8",
+        //"+9", "X", "-10", "X", "+11", "-12", "X", "+13",  "X", "-14", "X", "-16",
+        //"+15", "X", "-18", "X", "+17", "-20", "X", "+19", "X", "-22", "X", "-24",
+        //"+21", "X", "-24", "X" ];
+		
+        var tuning = tremolo24H
         switch (harp.tuning) {
             case 1: tuning = richter; break;
             case 2: tuning = richterValved; break;
@@ -220,11 +251,14 @@ MuseScore {
             case 10: tuning = paddyRichter; break;
             case 11: tuning = powerBender; break;
             case 12: tuning = powerDraw; break;
-            default: tuning = richter; break;
+            case 13: tuning = chromatic16H; break;
+			case 14: tuning = tremolo24H; break;
+			case 15: tuning = tremolo24HSMuFL; break;
+            default: tuning = tremolo24HSMuFL; break;
         }
 
         var harpkey = keylist.key
-        console.log("harpkey set to  " + keylist.key)
+        console.log("harpkey set to  " + harpkey)
 
         for (var i = 0; i < notes.length; i++) {
 
@@ -233,7 +267,7 @@ MuseScore {
 
             if (typeof notes[i].pitch === "undefined") // just in case
                 return
-            var tab = tuning[notes[i].pitch - harpkey];
+			var tab = tuning[notes[i].pitch - harpkey];
             if (typeof tab === "undefined")
                 text.text = "X";
             else {
@@ -246,7 +280,7 @@ MuseScore {
 
     function applyToSelection(func) {
         if (typeof curScore === 'undefined')
-            Qt.quit();
+            quit();
         var cursor = curScore.newCursor();
         var startStaff;
         var endStaff;
@@ -312,7 +346,7 @@ MuseScore {
                     } // end while segment
             } // end for voice
         } // end for staff
-        Qt.quit();
+        quit();
     } // end applyToSelection()
 
     function apply() {
@@ -323,6 +357,6 @@ MuseScore {
 
     onRun: {
         if (typeof curScore === 'undefined')
-            Qt.quit();
+            quit();
     }
 }
